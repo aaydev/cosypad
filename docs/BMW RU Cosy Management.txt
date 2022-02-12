@@ -1,0 +1,234 @@
+OBJECT Codeunit 5068357 BMW RU Cosy Management
+{
+  OBJECT-PROPERTIES
+  {
+    Date=11.02.22;
+    Time=16:11:20;
+    Modified=Yes;
+    Version List=IR11864#IR11864;
+  }
+  PROPERTIES
+  {
+    OnRun=BEGIN
+            IsCosySetupG := FALSE;
+            ERROR(ErrorDummy);
+            //Test; //debug
+          END;
+
+  }
+  CODE
+  {
+    VAR
+      ErrorDummy@201000001 : TextConst 'ENU=Вы не можете запускать этот Codeunit!;RUS=You can''t start this Codeunit!';
+      BMWAdditionalMakeDataG@201000003 : Record 5045204;
+      CosySetupG@201000002 : Record 5068352;
+      InterfaceSetupG@201000005 : Record 5207318;
+      InterfaceMappingCategoryG@201000006 : Record 5207314;
+      InterfaceMappingG@201000007 : Record 5207313;
+      MakeG@201000004 : Record 12;
+      CosyUrlEncoderG@201000008 : DotNet "'#######.CVRM.Services.CoSy, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9ef6761fa65e67a1'.#######.CVRM.Services.CoSy.CosyUrlEncoder";
+      IsCosySetupG@201000000 : Boolean;
+      ServerSideG@201000010 : Boolean;
+      DebugMode@201000009 : Boolean;
+
+    LOCAL PROCEDURE _INTERFACE_@201000005();
+    BEGIN
+    END;
+
+    PROCEDURE SetServerSide@201000003(ServerSideP@201000000 : Boolean);
+    BEGIN
+      ServerSideG := ServerSideP;
+    END;
+
+    PROCEDURE DownloadCosyImage@201000002(MakeCodeP@201000002 : Code[20];ModelNo@201000001 : Code[20];VAR OptionVariantP@201000000 : Record 5025424;ViewTypeP@201000004 : Integer;VAR DataP@201000003 : Record 99008535);
+    VAR
+      URLL@201000005 : Text;
+    BEGIN
+      SetupCosy(MakeCodeP);
+      URLL := BuildCosyURL(MakeCodeP, ModelNo, OptionVariantP, ViewTypeP);
+
+      IF DebugMode THEN
+        MESSAGE(URLL);
+
+      DownloadData(URLL,
+        DataP, InterfaceSetupG."Proxy URL", ServerSideG);
+    END;
+
+    LOCAL PROCEDURE _LOCAL_@201000006();
+    BEGIN
+    END;
+
+    LOCAL PROCEDURE SetupCosy@201000017(MakeCodeP@201000000 : Code[20]) Result : Boolean;
+    BEGIN
+      // debug mode
+      //DebugMode := TRUE; // please comment me in PROD!
+
+      Result := FALSE;
+
+      IF IsCosySetupG AND (MakeCodeP = MakeG.Code) THEN
+        EXIT;
+
+      MakeG.GET(MakeCodeP);
+      CosySetupG.GET;
+      BMWAdditionalMakeDataG.GET;
+
+      InterfaceSetupG.RESET;
+      InterfaceSetupG.SETRANGE("Layer Code", BMWAdditionalMakeDataG."BMW RU Layer Code");
+      InterfaceSetupG.SETRANGE("Requirement Code", CosySetupG."Cosy Requirement Code");
+      InterfaceSetupG.SETRANGE(Active, TRUE);
+      //IR11864 25.09.19  >>
+      //IF NOT InterfaceSetupG.FINDFIRST THEN
+      //  EXIT;
+      InterfaceSetupG.FINDFIRST;
+      //IR11864 25.09.19  <<
+
+      InterfaceMappingCategoryG.RESET;
+      InterfaceMappingCategoryG.SETRANGE("Layer Code", BMWAdditionalMakeDataG."BMW RU Layer Code");
+      InterfaceMappingCategoryG.SETRANGE("Requirement Code", CosySetupG."Cosy Requirement Code");
+
+      InterfaceMappingG.RESET;
+      InterfaceMappingG.SETRANGE(Active, TRUE);
+      InterfaceMappingG.SETRANGE("Layer Code", BMWAdditionalMakeDataG."BMW RU Layer Code");
+      InterfaceMappingG.SETRANGE("Requirement Code", CosySetupG."Cosy Requirement Code");
+
+      IsCosySetupG := TRUE;
+      Result := TRUE;
+    END;
+
+    LOCAL PROCEDURE DownloadData@201000000(URLP@201000001 : Text;VAR DataP@201000000 : Record 99008535;ProxyP@201000008 : Text;ServerSideP@201000006 : Boolean);
+    VAR
+      WebClientL@201000003 : DotNet "'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Net.WebClient" RUNONCLIENT;
+      WebClientSL@201000007 : DotNet "'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Net.WebClient";
+      ProxyL@201000002 : DotNet "'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.Net.WebProxy";
+      MemoryStreamL@201000004 : DotNet "'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'.System.IO.MemoryStream";
+      OutStreamL@201000005 : OutStream;
+    BEGIN
+      CLEAR(DataP.Blob);
+      IF NOT IsCosySetupG THEN
+        EXIT;
+      IF NOT InterfaceSetupG.Active THEN
+        EXIT;
+
+      IF ProxyP <> '' THEN
+        ProxyL := ProxyL.WebProxy(ProxyP)
+      ELSE
+        ProxyL := ProxyL.GetDefaultProxy;
+
+      IF NOT ServerSideP THEN BEGIN
+        WebClientL := WebClientL.WebClient;
+        WebClientL.Proxy(ProxyL);
+        WebClientL.UseDefaultCredentials(TRUE);
+        MemoryStreamL := MemoryStreamL.MemoryStream(WebClientL.DownloadData(URLP));
+      END
+      ELSE
+      BEGIN
+        WebClientSL := WebClientSL.WebClient;
+        WebClientSL.Proxy(ProxyL);
+        WebClientSL.UseDefaultCredentials(TRUE);
+        MemoryStreamL := MemoryStreamL.MemoryStream(WebClientSL.DownloadData(URLP));
+      END;
+
+      DataP.Blob.CREATEOUTSTREAM(OutStreamL);
+      COPYSTREAM(OutStreamL, MemoryStreamL);
+    END;
+
+    LOCAL PROCEDURE BuildCosyURL@201000001(MakeCodeP@201000000 : Code[20];ModelNoP@201000001 : Code[20];VAR OptionVariantP@201000002 : Record 5025424;ViewTypeP@201000003 : Integer) Result : Text;
+    VAR
+      RecRefL@201000004 : RecordRef;
+      RecordIDL@201000005 : RecordID;
+      BrandL@201000006 : Code[50];
+      POVL@201000007 : Code[50];
+      OptionsL@201000008 : Text;
+    BEGIN
+      Result := '';
+      CosyUrlEncoderG := CosyUrlEncoderG.CosyUrlEncoder;
+
+      BrandL := '';
+      RecRefL.GETTABLE(MakeG);
+      RecordIDL := RecRefL.RECORDID;
+      InterfaceMappingCategoryG.SETRANGE("Table No.", RecordIDL.TABLENO);
+      InterfaceMappingCategoryG.SETRANGE("Field No.", MakeG.FIELDNO(Code));
+      IF InterfaceMappingCategoryG.FINDFIRST THEN BEGIN
+        InterfaceMappingG.SETRANGE("Mapping Category", InterfaceMappingCategoryG.Code);
+        InterfaceMappingG.SETRANGE(Default, TRUE);
+        IF InterfaceMappingG.FINDFIRST THEN
+          BrandL := InterfaceMappingG."External Value";
+        InterfaceMappingG.SETRANGE(Default);
+        InterfaceMappingG.SETRANGE("Internal Value", MakeCodeP);
+        IF InterfaceMappingG.FINDFIRST THEN
+          BrandL := InterfaceMappingG."External Value";
+        InterfaceMappingG.SETRANGE("Mapping Category");
+        InterfaceMappingG.SETRANGE("Internal Value");
+      END;
+
+      POVL := '';
+      RecRefL.GETTABLE(CosySetupG);
+      RecordIDL := RecRefL.RECORDID;
+      InterfaceMappingCategoryG.SETRANGE("Table No.", RecordIDL.TABLENO);
+      InterfaceMappingCategoryG.SETRANGE("Field No.", CosySetupG.FIELDNO("Cosy Views"));
+      IF InterfaceMappingCategoryG.FINDFIRST THEN BEGIN
+        InterfaceMappingG.SETRANGE("Mapping Category", InterfaceMappingCategoryG.Code);
+        InterfaceMappingG.SETRANGE(Default, TRUE);
+        InterfaceMappingG.SETRANGE("Internal Value", FORMAT(ViewTypeP));
+        IF InterfaceMappingG.FINDFIRST THEN
+          POVL := InterfaceMappingG."External Value";
+        InterfaceMappingG.SETRANGE("Make Code", MakeCodeP);
+        InterfaceMappingG.SETRANGE(Default);
+        IF InterfaceMappingG.FINDFIRST THEN
+          POVL := InterfaceMappingG."External Value";
+        InterfaceMappingG.SETRANGE("Mapping Category");
+        InterfaceMappingG.SETRANGE("Internal Value");
+        InterfaceMappingG.SETRANGE("Make Code");
+      END;
+
+      Result := STRSUBSTNO('BKGND=0&LANG=1&CLIENT=ECOM&POV=%1&RESP=jpeg,err_beauty&WIDTH=800&QUALITY=80&VEHICLE=%2&BRAND=%3&MARKET=RU',
+        POVL, ModelNoP, BrandL);
+
+      OptionVariantP.SETRANGE("Option Type", OptionVariantP."Option Type"::Color);
+      IF OptionVariantP.FINDFIRST THEN
+        Result := Result + STRSUBSTNO('&paint=P%1', OptionVariantP."Option Code");
+      OptionVariantP.SETRANGE("Option Type", OptionVariantP."Option Type"::Upholstery);
+      IF OptionVariantP.FINDFIRST THEN
+        Result := Result + STRSUBSTNO('&fabric=F%1', OptionVariantP."Option Code");
+      OptionsL := '';
+      OptionVariantP.SETRANGE("Option Type", OptionVariantP."Option Type"::Option);
+      IF OptionVariantP.FINDSET THEN
+      REPEAT
+        IF OptionsL <> '' THEN
+          OptionsL := OptionsL + ',S';
+        OptionsL := OptionsL + OptionVariantP."Option Code";
+      UNTIL OptionVariantP.NEXT = 0;
+
+      IF OptionsL <> '' THEN
+        Result := Result + STRSUBSTNO('&sa=S%1', OptionsL);
+
+      DebugMode := TRUE;
+
+      IF DebugMode THEN
+        MESSAGE(Result);
+
+      Result := InterfaceSetupG.URL + CosyUrlEncoderG.Encode(Result);
+    END;
+
+    LOCAL PROCEDURE Test@201000004();
+    VAR
+      TempBlobL@201000000 : Record 99008535;
+      FileMgt@201000001 : Codeunit 419;
+      TextL@201000002 : Text;
+    BEGIN
+      TextL:= 'https://cosy.bmwgroup.com/h5vcom/cosySec?' + CosyUrlEncoderG.Encode(
+        'BKGND=0&LANG=1&CLIENT=ECOM&POV=DRIVERDOOR&RESP=jpeg,err_beauty&WIDTH=800&QUALITY=80&VEHICLE=ZV81&sa=0205,0216,02PA,0520,02C9&paint=P0300&BRAND=WBBM&MARKET=RU');
+      DownloadData(TextL, TempBlobL, '', FALSE);
+      FileMgt.BLOBExport(TempBlobL,'*.jpg', TRUE);
+    END;
+
+    BEGIN
+    {
+      #IR11864
+      IR11864 03.09.18 Object created
+      IR11864 25.09.19 Fixed setup error
+    }
+    END.
+  }
+}
+
