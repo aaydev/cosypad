@@ -1,0 +1,137 @@
+using System;
+using System.Configuration;
+using System.IO;
+using System.Net;
+using System.Security.Principal;
+using System.ServiceModel;
+using System.ServiceModel.Activation;
+using System.ServiceModel.Web;
+using System.Web.Hosting;
+using System.Xml.Linq;
+using System.Xml.XPath;
+using incadea.CVRM.Services.CoSy;
+
+namespace incadea.CVRM.Services
+{
+    /// <summary>
+    /// CoSy Service
+    /// </summary>
+    [AspNetCompatibilityRequirements(RequirementsMode = AspNetCompatibilityRequirementsMode.Allowed)]
+    public class CoSyService : ICoSyService
+    {
+        /// <summary>
+        /// Get Encoded URL for picture by params
+        /// </summary>
+        /// <param name="orgName">Crm organization name</param>
+        /// <param name="view">POV Value Examples:<list type="bullet">
+        /// <item><description>FRONT (EXTERIEUR 0)</description></item>
+        /// <item><description>FRONTSIDE (EXTERIEUR 45/315)</description></item>
+        /// <item><description>SIDE (EXTERIEUR 90/270)</description></item>
+        /// <item><description>REARSIDE (EXTERIEUR 225/135)</description></item>
+        /// <item><description>REAR (EXTERIEUR 180)</description></item>
+        /// <item><description>CENTERPANO (for centered panorama image)</description></item>
+        /// <item><description>WALKAROUND (for walkaround sequences)</description></item></list>
+        /// Extension values:<list type="bullet">
+        /// <item><description>OPEN (displaystate for convertible roof opened)</description></item>
+        /// <item><description>CLOSE (displaystate for convertible roof closed)</description></item>
+        /// <item><description>GRAYSHADED</description></item>
+        /// <item><description>COMPARE (true to scale version of walkaround)</description></item></list>
+        /// </param>
+        /// <param name="width">Width of picture in pixels</param>
+        /// <param name="vehicleId">Crm vehicle Id</param>
+        /// <param name="vehicleCofigurationId">Crm vehicle configuration id</param>
+        /// <param name="make">Make name like in <seealso cref="~/CoSy/CoSyConfiguration.xml"/></param>
+        /// <param name="modelCode">Vehicle model code name (e.g. 3R91)</param>
+        /// <param name="vehicleDate">Date of vehicle production (for apply vehicle's face-lift modification)</param>
+        /// <param name="colorCode">Color code (e.g. 0B67)</param>
+        /// <param name="upholsteryCode">Upholstery code (e.g. CSAT)</param>
+        /// <param name="optionCodes">Displayed options for interior or exterior. Options can be repeated with comma delimiter (e.g. 0563,02 MK,01 CA,0775,0552)</param>
+        /// <returns>Encoded URL for picture</returns>
+        [OperationBehavior(Impersonation = ImpersonationOption.Required)]
+        public string GetEncodedUrl(string orgName, string view, int width, Guid vehicleId, Guid vehicleCofigurationId, string make, string modelCode, DateTime vehicleDate, string colorCode, string upholsteryCode, string optionCodes)
+        {
+            var coSyIntegration = new CoSyIntegration(orgName);
+            string unencodedParameters = string.Format("BKGND=0&LANG=1&CLIENT=ECOM&POV={0},(null)&RESP=jpeg,err_beauty&WIDTH={1}&QUALITY=80", view, width);
+            if (coSyIntegration.IsVehicleExist(vehicleId, vehicleCofigurationId, make, modelCode))
+           {
+
+                var coSyOptionCodes = string.IsNullOrEmpty(optionCodes) ? string.Empty : "S" + string.Join(",S", optionCodes.Split(new[] { ',' }));
+                var coSyColorCode = string.IsNullOrEmpty(colorCode) ? string.Empty : "P" + colorCode;
+                var coSyUpholsteryCode = string.IsNullOrEmpty(upholsteryCode) ? string.Empty : "F" + upholsteryCode;
+                string brand = getBrandByMakeName(make);
+                unencodedParameters += string.Format("&sa={0}&paint={1}&VEHICLE={2}&fabric={3}&DATE={4}&BRAND={5}",
+                                                     coSyOptionCodes, coSyColorCode, modelCode, coSyUpholsteryCode,
+                                                     vehicleDate.ToString("yyyyMMdd"), brand);
+
+            }
+            string encodedParameters = CosyUrlEncoder.Encode(unencodedParameters);
+            return string.Format("http://{0}/h5vcom/cosySec?{1}", ConfigurationManager.AppSettings["CoSyServer"], encodedParameters);
+        }
+
+        /// <summary>
+        /// Get vehicle's picture by params
+        /// </summary>
+        /// <param name="orgName">Crm organization name</param>
+        /// <param name="view">POV Value Examples:<list type="bullet">
+        /// <item><description>FRONT (EXTERIEUR 0)</description></item>
+        /// <item><description>FRONTSIDE (EXTERIEUR 45/315)</description></item>
+        /// <item><description>SIDE (EXTERIEUR 90/270)</description></item>
+        /// <item><description>REARSIDE (EXTERIEUR 225/135)</description></item>
+        /// <item><description>REAR (EXTERIEUR 180)</description></item>
+        /// <item><description>CENTERPANO (for centered panorama image)</description></item>
+        /// <item><description>WALKAROUND (for walkaround sequences)</description></item></list>
+        /// Extension values:<list type="bullet">
+        /// <item><description>OPEN (displaystate for convertible roof opened)</description></item>
+        /// <item><description>CLOSE (displaystate for convertible roof closed)</description></item>
+        /// <item><description>GRAYSHADED</description></item>
+        /// <item><description>COMPARE (true to scale version of walkaround)</description></item></list>
+        /// </param>
+        /// <param name="width">Width of picture in pixels</param>
+        /// <param name="vehicleId">Crm vehicle Id</param>
+        /// <param name="vehicleCofigurationId">Crm vehicle configuration id</param>
+        /// <param name="make">Make name like in <seealso cref="~/CoSy/CoSyConfiguration.xml"/></param>
+        /// <param name="modelCode">Vehicle model code name (e.g. 3R91)</param>
+        /// <param name="vehicleDate">Date of vehicle production (for apply vehicle's face-lift modification)</param>
+        /// <param name="colorCode">Color code (e.g. 0B67)</param>
+        /// <param name="upholsteryCode">Upholstery code (e.g. CSAT)</param>
+        /// <param name="optionCodes">Displayed options for interior or exterior. Options can be repeated with comma delimiter (e.g. 0563,02 MK,01 CA,0775,0552)</param>
+        /// <returns>Vehicle's picture</returns>
+        [OperationBehavior(Impersonation = ImpersonationOption.Required)]
+        public Stream GetVehiclePicture(string orgName, string view, int width, Guid vehicleId, Guid vehicleCofigurationId, string make,
+                                    string modelCode, DateTime vehicleDate, string colorCode, string upholsteryCode,
+                                    string optionCodes)
+        {
+            var encodedUrl = GetEncodedUrl(orgName, view, width, vehicleId, vehicleCofigurationId, make,
+                                           modelCode, vehicleDate, colorCode, upholsteryCode,
+                                           optionCodes);
+            var credential = string.IsNullOrEmpty(ConfigurationManager.AppSettings["ProxyLogin"])
+                                 ? CredentialCache.DefaultCredentials
+                                 : new NetworkCredential(ConfigurationManager.AppSettings["ProxyLogin"],
+                                                         ConfigurationManager.AppSettings["ProxyPassword"],
+                                                         ConfigurationManager.AppSettings["ProxyDomain"]);
+            var request = (HttpWebRequest)WebRequest.Create(encodedUrl);
+            request.Proxy = new WebProxy(ConfigurationManager.AppSettings["ProxyServer"], true, new[] { "localhost", ConfigurationManager.AppSettings["ProxyServer"] }, credential);
+
+           var response = (HttpWebResponse)request.GetResponse();
+            WebOperationContext.Current.OutgoingResponse.ContentType = "image/jpeg";
+            return response.GetResponseStream();
+        }
+
+        /// <summary>
+        ///  Get an authenticated user account
+        /// </summary>
+        /// <returns>Authenticated user account</returns>
+        [OperationBehavior(Impersonation = ImpersonationOption.Allowed)]
+        public string GetUserName()
+        {
+            WindowsIdentity windowsIdentity = WindowsIdentity.GetCurrent();
+            return windowsIdentity == null ? "NULL" : windowsIdentity.Name;
+        }
+
+        private string getBrandByMakeName(string makeName)
+        {
+            var doc = XDocument.Load(HostingEnvironment.MapPath("~/Cosy/CoSyConfiguration.xml"));
+            return doc.Root.Element("Brands").XPathSelectElement("Brand[@name='" + makeName + "']").Value;
+        }
+    }
+}

@@ -1,0 +1,94 @@
+using System;
+using System.Text;
+using System.Web;
+
+namespace incadea.CVRM.Services.CoSy
+{
+    public sealed class CosyUrlEncoder
+    {
+        private const string SCodeCharacters = "4Zak0rQzNsXdVEl3S1CTuf7yJ%tmLHwYqoi6Dh9pjMbG2ePUvBW8gIKx5OFcRnA";
+
+        /// <summary>
+        /// Endode url-parameters for CoSy global service
+        /// </summary>
+        /// <param name="urlParameters">Uncoded url-parameters</param>
+        /// <returns>Encoded url-parameters</returns>
+        public static String Encode(String urlParameters)
+        {
+            var sTemp = new StringBuilder(250);
+            var sResult = new StringBuilder(250);
+            var rand = new Random();
+            var iPos = (int)(17D + SCodeCharacters.Length * rand.NextDouble());
+            var iStepping = (int)(11D + SCodeCharacters.Length * rand.NextDouble());
+            sResult.AppendFormat("COSY-EU-100-{0}{1}", iPos, iStepping);
+            char[] sEncoded = HttpUtility.UrlEncode(urlParameters).ToCharArray();
+            foreach (char encodedStringChar in sEncoded)
+                switch ((int)encodedStringChar)
+                {
+                    case 43: // '+'
+                        sTemp.Append("%20");
+                        break;
+
+                    case 45: // '-'
+                        sTemp.Append("%2D");
+                        break;
+
+                    case 95: // '_'
+                        sTemp.Append("%5F");
+                        break;
+
+                    case 46: // '.'
+                        sTemp.Append("%2E");
+                        break;
+
+                    case 42: // '*'
+                        sTemp.Append("%2A");
+                        break;
+                    case 40: // (
+                        sTemp.Append("%28");
+                        break;
+                    case 41: // (
+                        sTemp.Append("%29");
+                        break;
+                    default:
+                        sTemp.Append(encodedStringChar);
+                        break;
+                }
+            var sTempStringed = sTemp.ToString();
+            for (int i = 0; i < sTemp.Length; i++)
+            {
+                sResult.Append(SCodeCharacters[(iPos + SCodeCharacters.IndexOf(sTempStringed[i])) % SCodeCharacters.Length]);
+                iPos += iStepping;
+            }
+
+            return HttpUtility.UrlEncode(sResult.ToString());
+        }
+
+        /// <summary>
+        /// Decode url parameters
+        /// </summary>
+        /// <param name="urlParameter">Encoded to CoSy global service parameter</param>
+        /// <returns>Parameters to internal CoSy service</returns>
+        public static String Decode(String urlParameter)
+        {
+            if (!urlParameter.StartsWith("COSY-EU"))
+            {
+                throw new NotImplementedException("Decode of COSY-EU");
+            }
+            String sTemp = HttpUtility.UrlDecode(urlParameter);
+            var sResult = new StringBuilder(250);
+            var iPos = int.Parse(sTemp.Substring(12, 14));
+            var iStepping = int.Parse(sTemp.Substring(14, 16));
+            for (int i = 16; i < sTemp.Length; i++)
+            {
+                int index = SCodeCharacters.IndexOf(sTemp[i]) - iPos;
+                if (index < 0)
+                    index -= (index/SCodeCharacters.Length - 1)*SCodeCharacters.Length;
+                sResult.Append(SCodeCharacters[index % SCodeCharacters.Length]);
+                iPos += iStepping;
+            }
+
+            return HttpUtility.UrlDecode(sResult.ToString());
+        }
+    }
+}
