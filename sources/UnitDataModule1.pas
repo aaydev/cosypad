@@ -28,6 +28,9 @@ type
                         const AParam: string;
                         const AFieldType: TFieldType;
                         const AValue: OleVariant);
+
+    procedure GetModels(AMake1: string; AMake2: string; AStrings: TStrings);
+
   end;
 
 var
@@ -37,8 +40,6 @@ implementation
 
 uses
   System.Variants;
-
-{%CLASSGROUP 'Vcl.Controls.TControl'}
 
 {$R *.dfm}
 
@@ -56,7 +57,8 @@ end;
 
 procedure TDataModule1.Disconnect;
 begin
-  SQLConnection1.Connected := False;
+  if SQLConnection1 <> nil then
+    SQLConnection1.Connected := False;
 end;
 
 procedure TDataModule1.AddParam(ASQLQuery: TSQLQuery;
@@ -71,6 +73,38 @@ begin
   Param.Clear;
   Param.Bound := True;
   Param.Value := AValue;
+end;
+
+procedure TDataModule1.GetModels(AMake1: string; AMake2: string; AStrings: TStrings);
+var
+  Query1: TSQLQuery;
+  SingleMake: Boolean;
+begin
+  AStrings.Clear;
+  Query1 := SQLQuery1;
+  Query1.SQL.Clear;
+
+  SingleMake := (AMake2 = '') or (AMake1 = AMake2);
+  if SingleMake then
+    Query1.SQL.Add('SELECT DISTINCT [model] FROM [options] WHERE [make] = :make1 ORDER BY [model] ASC')
+  else
+    Query1.SQL.Add('SELECT DISTINCT [model] FROM [options] WHERE ([make] = :make1) OR ([make] = :make2) ORDER BY [model] ASC');
+
+  Query1.ParamCheck := True;
+  DM.AddParam(Query1, 'make1', ftUnknown, AMake1);
+  if not SingleMake then
+    DM.AddParam(Query1, 'make2', ftUnknown, AMake2);
+  Query1.Open;
+
+  if not Query1.IsEmpty then
+  begin
+    while not Query1.Eof do
+    begin
+      AStrings.Add(Query1.FieldByName('model').AsString);
+      Query1.Next;
+    end;
+  end;
+  Query1.Close;
 end;
 
 end.

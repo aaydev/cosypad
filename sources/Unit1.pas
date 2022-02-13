@@ -51,16 +51,14 @@ type
     SqlDllName: string;
     DatabaseFileName: string;
 
-
-    procedure InitApp;
-
+    function InitApp: Boolean;
     procedure UpdateModelList;
-
-    function CosyEncode(InStr: string): string;
     procedure DownloadAndViewImage(URL: string);
   public
     { Public declarations }
   end;
+
+  TMakes = (none, BMW, MINI, MOTO);
 
 var
   Form1: TForm1;
@@ -71,7 +69,13 @@ const
 
   FName_SQL: string = 'sqlite3.dll';
   FName_DB: string = 'mo.db3';
-  SelectDummy: string = '--- select ---';
+
+  CosyServiceURL: string = 'https://cosy.bmwgroup.com/h5vcom/cosySec?';
+
+resourcestring
+  SelectDummy = '--- select ---';
+  ErrFileIsAbsent = 'File is absent!';
+
 
 implementation
 
@@ -81,57 +85,11 @@ uses
   JPEG,
   Data.DB,
   Data.SQLExpr,
-
+  Cosy,
   UnitDataModule1,
   UnitAbout;
 
-function EncodeURIComponent(const ASrc: string): UTF8String;
-const
-  HexMap: UTF8String = '0123456789ABCDEF';
 
-  function IsSafeChar(ch: Integer): Boolean;
-  begin
-    if (ch >= 48) and (ch <= 57) then Result := True // 0-9
-    else if (ch >= 65) and (ch <= 90) then Result := True // A-Z
-    else if (ch >= 97) and (ch <= 122) then Result := True // a-z
-    else if (ch = 33) then Result := True // !
-    else if (ch >= 39) and (ch <= 42) then Result := True // '()*
-    else if (ch >= 45) and (ch <= 46) then Result := True // -.
-    else if (ch = 95) then Result := True // _
-    else if (ch = 126) then Result := True // ~
-    else Result := False;
-  end;
-var
-  I, J: Integer;
-  ASrcUTF8: UTF8String;
-begin
-  Result := '';    {Do not Localize}
-
-  ASrcUTF8 := UTF8Encode(ASrc);
-  // UTF8Encode call not strictly necessary but
-  // prevents implicit conversion warning
-
-  I := 1; J := 1;
-  SetLength(Result, Length(ASrcUTF8) * 3); // space to %xx encode every byte
-  while I <= Length(ASrcUTF8) do
-  begin
-    if IsSafeChar(Ord(ASrcUTF8[I])) then
-    begin
-      Result[J] := ASrcUTF8[I];
-      Inc(J);
-    end
-    else
-    begin
-      Result[J] := '%';
-      Result[J+1] := HexMap[(Ord(ASrcUTF8[I]) shr 4) + 1];
-      Result[J+2] := HexMap[(Ord(ASrcUTF8[I]) and 15) + 1];
-      Inc(J,3);
-    end;
-    Inc(I);
-  end;
-
-  SetLength(Result, J-1);
-end;
 procedure TForm1.Action2Execute(Sender: TObject);
 begin
   with TFormAbout.Create(nil) do
@@ -168,24 +126,26 @@ begin
   //params := Memo1.Lines.Text;
 
 
-  DownloadAndViewImage(CosyEncode(params));
+  DownloadAndViewImage(CosyServiceURL + Cosy.EncodeStr(params));
 end;
 
-procedure TForm1.InitApp;
+function TForm1.InitApp: Boolean;
 begin
+  Result := False;
   Application.Title := AppName;
   Caption := AppName;
 
   AppFilePath := ExtractFilePath(ParamStr(0));
   SqlDllName := AppFilePath + FName_SQL;
   if not FileExists(SqlDllName) then
-    raise Exception.Create(Format('File %s is absent!', [SqlDllName]));
+  begin
+    TaskMessageDlg(ErrFileIsAbsent, SqlDllName,
+                    mtError, [mbOK], 0);
+    Exit;
+  end;
+
   DatabaseFileName := AppFilePath + FName_DB;
-
-
-
-
-
+  Result := True;
 end;
 
 
@@ -194,54 +154,7 @@ begin
   UpdateModelList;
 end;
 
-function TForm1.CosyEncode(InStr: string): string;
-const
-  SCodeCharacters: string = '4Zak0rQzNsXdVEl3S1CTuf7yJ%tmLHwYqoi6Dh9pjMbG2ePUvBW8gIKx5OFcRnA';
-var
-  sTemp: string;
-  sResult: string;
-  sEncoded: string;
-  iPos: Integer;
-  iStepping: Integer;
-  i: Integer;
-  Index: Integer;
-  cb: Byte;
-  SCodeCharactersIndex: Integer;
 
-begin
-  Randomize;
-  iPos := Trunc(17 + Length(SCodeCharacters) * Random());
-  iStepping := Trunc(11 + Length(SCodeCharacters) * Random());
-  sResult := Format('COSY-EU-100-%u%u', [iPos, iStepping]);
-  sEncoded := EncodeURIComponent(InStr);
-
-  sTemp := '';
-  for i := 1 to Length(sEncoded) - 1 do
-  begin
-    cb := Ord(sEncoded[i]);
-    case cb of
-      40: sTemp := sTemp + '%28';
-      41: sTemp := sTemp + '%29';
-      42: sTemp := sTemp + '%2A';
-      43: sTemp := sTemp + '%20';
-      45: sTemp := sTemp + '%2D';
-      46: sTemp := sTemp + '%2E';
-      95: sTemp := sTemp + '%5F';
-    else
-      sTemp := sTemp + sEncoded[i];
-    end;
-  end;
-
-  for i := 0 to Length(sTemp) - 1 do
-  begin
-    SCodeCharactersIndex := SCodeCharacters.IndexOf(sTemp[i + 1]);
-    Index := (iPos + SCodeCharactersIndex) mod SCodeCharacters.Length;
-    sResult := sResult + SCodeCharacters[Index + 1];
-    iPos := iPos + iStepping;
-  end;
-
-  Result := 'https://cosy.bmwgroup.com/h5vcom/cosySec?' + EncodeURIComponent(sResult);
-end;
 
 procedure TForm1.DownloadAndViewImage(URL: string);
 var
@@ -276,7 +189,13 @@ begin
   {$IFDEF DEBUG}
   ReportMemoryLeaksOnShutdown := True;
   {$ENDIF}
-  InitApp();
+  Visible := False;
+
+  if not InitApp then
+  begin
+    Application.Terminate;
+    Exit;
+  end;
 
   Memo1.Lines.Clear;
   ComboBox1.Items.Clear;
@@ -287,22 +206,21 @@ begin
 
   Application.CreateForm(TDataModule1, DM);
   DM.Connect(DatabaseFileName);
+
+  Visible := True;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  DM.Disconnect;
+  if Assigned(DM) then
+    DM.Disconnect;
 end;
 
 procedure TForm1.UpdateModelList;
 var
   brand: string;
-  Query1: TSQLQuery;
   make1, make2: string;
-  i: Integer;
-  Q: Char;
 begin
-  Q := #39;
 
   case ComboBox1.ItemIndex of
     0: brand := 'WBBM';
@@ -325,27 +243,10 @@ begin
     end;
   end;
 
-  ComboBox2.Items.Clear;
-  ComboBox2.Items.Add(SelectDummy);
+
+  DM.GetModels(make1, make2, ComboBox2.Items);
+  ComboBox2.Items.Insert(0, SelectDummy);
   ComboBox2.ItemIndex := 0;
-
-  Query1 := DM.SQLQuery1;
-  Query1.SQL.Clear;
-  Query1.SQL.Add('SELECT DISTINCT [model] FROM [options] WHERE ([make] = :make1) OR ([make] = :make2) ORDER BY [model] ASC');
-  Query1.ParamCheck := True;
-  DM.AddParam(Query1, 'make1', ftUnknown, make1);
-  DM.AddParam(Query1, 'make2', ftUnknown, make2);
-  Query1.Open;
-
-  if not Query1.IsEmpty then
-  begin
-    while not Query1.Eof do
-    begin
-      ComboBox2.Items.Add(Query1.FieldByName('model').AsString);
-      Query1.Next;
-    end;
-  end;
-  Query1.Close;
 
 end;
 
