@@ -10,6 +10,7 @@ BMW Colouring System (COSY) viewer
 * [32-bit DLL for openssl v1.0.2u](https://indy.fulgan.com/SSL/)
 
 ## How to build release
-* build Project1.dpr from sources folder and place exe to application folder
-* extract supplemets.zip from dll folder and place it to application folder
-* copy mo.db3 from db folder and place it to application folder
+* build Project1.dpr from "sources" folder;
+* extract supplemets.zip from "dll" folder;
+* extract database db.zip from "db" folder;
+* place compilled application, supplements and database in the same folder and run it. 
