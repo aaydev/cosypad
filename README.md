@@ -12,5 +12,5 @@ BMW Colouring System (COSY) viewer
 ## How to build release
 * build Project1.dpr from "sources" folder;
 * extract supplemets.zip from "dll" folder;
-* extract database db.zip from "db" folder;
+* extract database database.zip from external [link](https://drive.google.com/drive/folders/14jXopvD7VyfuTtrDDbxxs40pWXLkeD5n?usp=sharing);
 * place compilled application, supplements and database in the same folder and run it. 
