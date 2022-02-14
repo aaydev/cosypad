@@ -2,9 +2,11 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Form1'
-  ClientHeight = 643
+  ClientHeight = 601
   ClientWidth = 1093
   Color = clBtnFace
+  Constraints.MinHeight = 500
+  Constraints.MinWidth = 700
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
@@ -19,9 +21,10 @@ object Form1: TForm1
     Left = 0
     Top = 25
     Width = 465
-    Height = 593
+    Height = 551
     Align = alLeft
     TabOrder = 0
+    ExplicitHeight = 593
     object Label1: TLabel
       Left = 9
       Top = 6
@@ -38,100 +41,104 @@ object Form1: TForm1
     end
     object Label3: TLabel
       Left = 9
-      Top = 49
+      Top = 54
       Width = 25
       Height = 13
       Caption = 'Color'
     end
     object Label4: TLabel
       Left = 9
-      Top = 147
+      Top = 152
       Width = 37
       Height = 13
       Caption = 'Options'
     end
     object Label5: TLabel
       Left = 9
-      Top = 101
+      Top = 103
       Width = 52
       Height = 13
       Caption = 'Upholstery'
     end
     object Label7: TLabel
       Left = 9
-      Top = 298
+      Top = 413
       Width = 62
       Height = 13
       Caption = 'User request'
     end
-    object ComboBox1: TComboBox
+    object ComboBoxMake: TComboBox
       Left = 7
       Top = 24
       Width = 138
       Height = 21
+      Style = csDropDownList
       TabOrder = 0
-      Text = 'ComboBox1'
-      OnSelect = ComboBox1Select
+      OnSelect = ComboBoxMakeSelect
     end
-    object ComboBox2: TComboBox
+    object ComboBoxModel: TComboBox
       Left = 151
       Top = 24
       Width = 306
       Height = 21
+      Style = csDropDownList
+      DropDownCount = 16
       TabOrder = 1
-      Text = 'ComboBox1'
+      OnSelect = ComboBoxModelSelect
     end
-    object ComboBox3: TComboBox
+    object ComboBoxPaint: TComboBox
       Left = 9
-      Top = 68
+      Top = 73
       Width = 448
       Height = 21
+      Style = csDropDownList
       TabOrder = 2
-      Text = 'ComboBox1'
+      OnSelect = ComboBoxPaintSelect
     end
-    object ComboBox4: TComboBox
+    object ComboBoxFabric: TComboBox
       Left = 7
-      Top = 120
+      Top = 122
       Width = 450
       Height = 21
+      Style = csDropDownList
       TabOrder = 3
-      Text = 'ComboBox1'
+      OnSelect = ComboBoxFabricSelect
     end
-    object CheckListBox1: TCheckListBox
+    object CheckListBoxOptions: TCheckListBox
       Left = 7
-      Top = 169
+      Top = 174
       Width = 450
-      Height = 116
+      Height = 203
       ItemHeight = 13
       TabOrder = 4
+      OnClick = CheckListBoxOptionsClick
     end
-    object Button1: TButton
+    object MemoRequest: TMemo
       Left = 9
-      Top = 550
+      Top = 432
+      Width = 448
+      Height = 113
+      TabOrder = 5
+    end
+    object ButtonResetOptions: TButton
+      Left = 9
+      Top = 383
       Width = 89
       Height = 25
-      Caption = 'Refresh'
-      TabOrder = 5
-      OnClick = Button1Click
-    end
-    object Memo1: TMemo
-      Left = 9
-      Top = 317
-      Width = 448
-      Height = 220
-      Lines.Strings = (
-        'Memo1')
+      Caption = 'Reset selection'
       TabOrder = 6
+      OnClick = ButtonResetOptionsClick
     end
   end
   object Panel2: TPanel
     Left = 465
     Top = 25
     Width = 628
-    Height = 593
+    Height = 551
     Align = alClient
     ParentBackground = False
     TabOrder = 1
+    ExplicitHeight = 593
     object Panel3: TPanel
       Left = 1
       Top = 1
@@ -147,32 +154,53 @@ object Form1: TForm1
         Height = 13
         Caption = 'View'
       end
-      object ComboBox5: TComboBox
+      object ComboBoxView: TComboBox
         Left = 6
         Top = 24
-        Width = 146
+        Width = 107
         Height = 21
+        Style = csDropDownList
         TabOrder = 0
-        Text = 'ComboBox1'
+        OnSelect = ComboBoxViewSelect
+      end
+      object Panel5: TPanel
+        Left = 544
+        Top = 1
+        Width = 81
+        Height = 59
+        Align = alRight
+        BevelOuter = bvNone
+        TabOrder = 1
+        object ButtonRepaint: TButton
+          Left = 8
+          Top = 22
+          Width = 60
+          Height = 25
+          Caption = 'Update'
+          TabOrder = 0
+          OnClick = ButtonRepaintClick
+        end
       end
     end
     object Panel4: TPanel
       Left = 1
       Top = 62
       Width = 626
-      Height = 530
+      Height = 488
       Align = alClient
       Color = clWindow
       ParentBackground = False
       TabOrder = 1
+      ExplicitHeight = 530
       object Image1: TImage
         Left = 1
         Top = 1
         Width = 624
-        Height = 528
+        Height = 486
         Align = alClient
         ExplicitLeft = 5
         ExplicitTop = -3
+        ExplicitHeight = 528
       end
     end
   end
@@ -198,20 +226,17 @@ object Form1: TForm1
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Top = 618
+    Top = 576
     Width = 1093
     Height = 25
     AutoHint = True
     Panels = <
       item
-        Width = 50
-      end
-      item
-        Width = 50
+        Width = 300
       end>
     ParentShowHint = False
     ShowHint = True
-    SimplePanel = True
+    ExplicitTop = 618
   end
   object IdSSLIOHandlerSocketOpenSSL1: TIdSSLIOHandlerSocketOpenSSL
     MaxLineAction = maException

@@ -221,7 +221,7 @@ object FormAbout: TFormAbout
   end
   object Label4: TLabel
     Left = 78
-    Top = 85
+    Top = 77
     Width = 165
     Height = 13
     Cursor = crHandPoint
@@ -236,22 +236,9 @@ object FormAbout: TFormAbout
     ParentFont = False
     OnClick = Label4Click
   end
-  object Label5: TLabel
-    Left = 78
-    Top = 62
-    Width = 186
-    Height = 13
-    Caption = 'NOT FOR COMMERCIAL PURPOSES'
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clMaroon
-    Font.Height = -11
-    Font.Name = 'Tahoma'
-    Font.Style = [fsBold]
-    ParentFont = False
-  end
   object Button1: TButton
     Left = 276
-    Top = 80
+    Top = 72
     Width = 75
     Height = 25
     Cursor = crHandPoint

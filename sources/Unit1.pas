@@ -14,15 +14,15 @@ type
   TForm1 = class(TForm)
     Panel1: TPanel;
     Panel2: TPanel;
-    ComboBox1: TComboBox;
+    ComboBoxMake: TComboBox;
     Label1: TLabel;
     Label2: TLabel;
-    ComboBox2: TComboBox;
-    ComboBox3: TComboBox;
+    ComboBoxModel: TComboBox;
+    ComboBoxPaint: TComboBox;
     Label3: TLabel;
-    ComboBox4: TComboBox;
+    ComboBoxFabric: TComboBox;
     Label4: TLabel;
-    CheckListBox1: TCheckListBox;
+    CheckListBoxOptions: TCheckListBox;
     Label5: TLabel;
     IdSSLIOHandlerSocketOpenSSL1: TIdSSLIOHandlerSocketOpenSSL;
     ActionManager1: TActionManager;
@@ -32,33 +32,50 @@ type
     Action1: TAction;
     StatusBar1: TStatusBar;
     Action2: TAction;
-    Button1: TButton;
     Panel3: TPanel;
-    ComboBox5: TComboBox;
+    ComboBoxView: TComboBox;
     Label6: TLabel;
     Panel4: TPanel;
     Image1: TImage;
-    Memo1: TMemo;
+    MemoRequest: TMemo;
     Label7: TLabel;
-    procedure Button1Click(Sender: TObject);
+    ButtonResetOptions: TButton;
+    Panel5: TPanel;
+    ButtonRepaint: TButton;
+    procedure ButtonRepaintClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure Action2Execute(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure ComboBox1Select(Sender: TObject);
+    procedure ComboBoxMakeSelect(Sender: TObject);
+    procedure ComboBoxModelSelect(Sender: TObject);
+    procedure ButtonResetOptionsClick(Sender: TObject);
+    procedure ComboBoxPaintSelect(Sender: TObject);
+    procedure ComboBoxFabricSelect(Sender: TObject);
+    procedure CheckListBoxOptionsClick(Sender: TObject);
+    procedure ComboBoxViewSelect(Sender: TObject);
   private
     { Private declarations }
+    UpdateRequestHalted: Boolean;
+
     AppFilePath: string;
     SqlDllName: string;
     DatabaseFileName: string;
 
     function InitApp: Boolean;
     procedure UpdateModelList;
+    procedure UpdatePaintList;
+    procedure UpdateFabricList;
+    procedure UpdateOptionList;
+    procedure ResetOptionSelection;
+
+    procedure UpdateRequest;
+
     procedure DownloadAndViewImage(URL: string);
   public
     { Public declarations }
   end;
 
-  TMakes = (none, BMW, MINI, MOTO);
+  TMakes = (makeBMW, makeMINI, makeMOTO);
 
 var
   Form1: TForm1;
@@ -73,7 +90,6 @@ const
   CosyServiceURL: string = 'https://cosy.bmwgroup.com/h5vcom/cosySec?';
 
 resourcestring
-  SelectDummy = '--- select ---';
   ErrFileIsAbsent = 'File is absent!';
 
 
@@ -100,7 +116,7 @@ begin
     end;
 end;
 
-procedure TForm1.Button1Click(Sender: TObject);
+procedure TForm1.ButtonRepaintClick(Sender: TObject);
 var
   params: string;
 
@@ -115,7 +131,7 @@ begin
 
 
 
-  params := 'BKGND=0&LANG=1&CLIENT=ECOM&POV=FRONT&RESP=jpeg,err_beauty&WIDTH=' + IntToStr(param_width) + '&QUALITY=80' +
+  MemoRequest.Lines.Text := 'BKGND=0&LANG=1&CLIENT=ECOM&POV=FRONT&RESP=jpeg,err_beauty&WIDTH=' + IntToStr(param_width) + '&QUALITY=80' +
     '&VEHICLE=GV81&BRAND=WBBM&MARKET=RU&paint=P0X1D&fabric=FZBEJ&sa=S01A1,S01CR,S01N0,S02NH,S02T4,' +
     'S02VB,S02VC,S02VH,S02VW,S0322,S0323,S033T,S0358,S03DS,S0402,S0428,S0453,S04A2,S04FM,S04GQ,S04HA,' +
     'S04HB,S04ML,S04NB,S0548,S05AC,S05AU,S05AZ,S05DN,S06AE,S06AF,S06AK,S06C3,S06F1,S06NW,S06U3,S06UD,' +
@@ -123,10 +139,15 @@ begin
     'S0XC4,S0XD5,S0ZH2';
 
 
-  //params := Memo1.Lines.Text;
+  params := MemoRequest.Lines.Text;
 
 
   DownloadAndViewImage(CosyServiceURL + Cosy.EncodeStr(params));
+end;
+
+procedure TForm1.ButtonResetOptionsClick(Sender: TObject);
+begin
+  ResetOptionSelection;
 end;
 
 function TForm1.InitApp: Boolean;
@@ -145,16 +166,58 @@ begin
   end;
 
   DatabaseFileName := AppFilePath + FName_DB;
+
+  ComboBoxMake.Items.Clear;
+  ComboBoxMake.Items.Add('BMW');
+  ComboBoxMake.Items.Add('MINI');
+  ComboBoxMake.Items.Add('BMW Motorrad');
+
+  ComboBoxModel.Clear;
+  ComboBoxPaint.Clear;
+  ComboBoxFabric.Clear;
+  CheckListBoxOptions.Clear;
+  MemoRequest.Clear;
+
+  UpdateRequestHalted := False;
+
   Result := True;
 end;
 
 
-procedure TForm1.ComboBox1Select(Sender: TObject);
+procedure TForm1.CheckListBoxOptionsClick(Sender: TObject);
+begin
+  UpdateRequest;
+end;
+
+procedure TForm1.ComboBoxFabricSelect(Sender: TObject);
+begin
+  UpdateRequest;
+end;
+
+procedure TForm1.ComboBoxMakeSelect(Sender: TObject);
 begin
   UpdateModelList;
 end;
 
+procedure TForm1.ComboBoxModelSelect(Sender: TObject);
+begin
+  UpdateRequestHalted := True;
+  UpdatePaintList;
+  UpdateFabricList;
+  UpdateOptionList;
+  UpdateRequestHalted := False;
+  UpdateRequest;
+end;
 
+procedure TForm1.ComboBoxPaintSelect(Sender: TObject);
+begin
+  UpdateRequest;
+end;
+
+procedure TForm1.ComboBoxViewSelect(Sender: TObject);
+begin
+  UpdateRequest;
+end;
 
 procedure TForm1.DownloadAndViewImage(URL: string);
 var
@@ -197,15 +260,13 @@ begin
     Exit;
   end;
 
-  Memo1.Lines.Clear;
-  ComboBox1.Items.Clear;
-  ComboBox1.Items.Add('BMW');
-  ComboBox1.Items.Add('MINI');
-  ComboBox1.Items.Add('BMW Motorrad');
-  ComboBox1.ItemIndex := 0;
+  MemoRequest.Lines.Clear;
 
   Application.CreateForm(TDataModule1, DM);
   DM.Connect(DatabaseFileName);
+
+  ComboBoxMake.ItemIndex := 0;
+  ComboBoxMake.OnSelect(Self);
 
   Visible := True;
 end;
@@ -222,13 +283,13 @@ var
   make1, make2: string;
 begin
 
-  case ComboBox1.ItemIndex of
+  case ComboBoxMake.ItemIndex of
     0: brand := 'WBBM';
     1: brand := 'WBMI';
     2: brand := 'WBABM';
   end;
 
-  case ComboBox1.ItemIndex of
+  case ComboBoxMake.ItemIndex of
     0: begin
       make1 := 'BMW';
       make2 := 'BMWI';
@@ -243,14 +304,59 @@ begin
     end;
   end;
 
-
-  DM.GetModels(make1, make2, ComboBox2.Items);
-  ComboBox2.Items.Insert(0, SelectDummy);
-  ComboBox2.ItemIndex := 0;
+  Cursor := crHourGlass;
+  DM.GetModelList(make1, make2, ComboBoxModel.Items);
+  Cursor := crDefault;
+  ComboBoxModel.ItemIndex := 0;
+  ComboBoxModel.OnSelect(Self);
 
 end;
 
+function GetValuedCode(const ACode: string): string;
+var
+  i: Integer;
+begin
+  Result := ACode;
+  i := Pos(': ', ACode);
+  if i > 0 then
+    Result := Copy(Result, 1, i - 1);
+end;
 
+procedure TForm1.UpdatePaintList;
+begin
+  Cursor := crHourGlass;
+  DM.GetPaintList(GetValuedCode(ComboBoxModel.Items[ComboBoxModel.ItemIndex]), ComboBoxPaint.Items);
+  Cursor := crDefault;
+  ComboBoxPaint.ItemIndex := 0;
+end;
+
+procedure TForm1.UpdateFabricList;
+begin
+  Cursor := crHourGlass;
+  DM.GetFabricList(GetValuedCode(ComboBoxModel.Items[ComboBoxModel.ItemIndex]), ComboBoxFabric.Items);
+  Cursor := crDefault;
+  ComboBoxFabric.ItemIndex := 0;
+end;
+
+procedure TForm1.UpdateOptionList;
+begin
+  Cursor := crHourGlass;
+  DM.GetOptionList(GetValuedCode(ComboBoxModel.Items[ComboBoxModel.ItemIndex]), CheckListBoxOptions.Items);
+  Cursor := crDefault;
+  CheckListBoxOptions.ItemIndex := 0;
+end;
+
+procedure TForm1.ResetOptionSelection;
+begin
+  CheckListBoxOptions.CheckAll(cbUnchecked);
+  UpdateRequest;
+end;
+
+procedure TForm1.UpdateRequest;
+begin
+  if UpdateRequestHalted then
+    Exit;
+end;
 
 
 end.
