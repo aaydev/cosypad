@@ -2,7 +2,7 @@ object Form1: TForm1
   Left = 0
   Top = 0
   Caption = 'Form1'
-  ClientHeight = 601
+  ClientHeight = 604
   ClientWidth = 1093
   Color = clBtnFace
   Constraints.MinHeight = 500
@@ -21,10 +21,12 @@ object Form1: TForm1
     Left = 0
     Top = 25
     Width = 465
-    Height = 551
+    Height = 554
     Align = alLeft
     TabOrder = 0
-    ExplicitHeight = 593
+    ExplicitLeft = 1
+    ExplicitTop = 19
+    ExplicitHeight = 551
     object Label1: TLabel
       Left = 9
       Top = 6
@@ -34,7 +36,7 @@ object Form1: TForm1
     end
     object Label2: TLabel
       Left = 153
-      Top = 5
+      Top = 6
       Width = 28
       Height = 13
       Caption = 'Model'
@@ -117,7 +119,7 @@ object Form1: TForm1
       Left = 9
       Top = 432
       Width = 448
-      Height = 113
+      Height = 81
       TabOrder = 5
     end
     object ButtonResetOptions: TButton
@@ -129,16 +131,25 @@ object Form1: TForm1
       TabOrder = 6
       OnClick = ButtonResetOptionsClick
     end
+    object ButtonRepaint: TButton
+      Left = 9
+      Top = 519
+      Width = 89
+      Height = 25
+      Caption = 'Update'
+      TabOrder = 7
+      OnClick = ButtonRepaintClick
+    end
   end
   object Panel2: TPanel
     Left = 465
     Top = 25
     Width = 628
-    Height = 551
+    Height = 554
     Align = alClient
     ParentBackground = False
     TabOrder = 1
-    ExplicitHeight = 593
+    ExplicitHeight = 551
     object Panel3: TPanel
       Left = 1
       Top = 1
@@ -156,12 +167,23 @@ object Form1: TForm1
       end
       object ComboBoxView: TComboBox
         Left = 6
-        Top = 24
+        Top = 23
         Width = 107
         Height = 21
         Style = csDropDownList
         TabOrder = 0
         OnSelect = ComboBoxViewSelect
+        Items.Strings = (
+          'Front'
+          'Front side'
+          'Side'
+          'Rear side'
+          'Rear'
+          'Driver Door'
+          'Dashboard'
+          'Driver'
+          'Rear birdseye'
+          'Center pano')
       end
       object Panel5: TPanel
         Left = 544
@@ -171,36 +193,45 @@ object Form1: TForm1
         Align = alRight
         BevelOuter = bvNone
         TabOrder = 1
-        object ButtonRepaint: TButton
-          Left = 8
-          Top = 22
-          Width = 60
-          Height = 25
-          Caption = 'Update'
-          TabOrder = 0
-          OnClick = ButtonRepaintClick
-        end
       end
     end
     object Panel4: TPanel
       Left = 1
       Top = 62
       Width = 626
-      Height = 488
+      Height = 491
       Align = alClient
       Color = clWindow
       ParentBackground = False
       TabOrder = 1
-      ExplicitHeight = 530
+      ExplicitHeight = 488
       object Image1: TImage
         Left = 1
         Top = 1
         Width = 624
-        Height = 486
+        Height = 489
         Align = alClient
         ExplicitLeft = 5
         ExplicitTop = -3
         ExplicitHeight = 528
+      end
+      object LabelNoPicture: TLabel
+        Left = 1
+        Top = 1
+        Width = 624
+        Height = 489
+        Align = alClient
+        Alignment = taCenter
+        Caption = 'no image'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clMaroon
+        Font.Height = -96
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        Layout = tlCenter
+        ExplicitWidth = 393
+        ExplicitHeight = 116
       end
     end
   end
@@ -226,7 +257,7 @@ object Form1: TForm1
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Top = 576
+    Top = 579
     Width = 1093
     Height = 25
     AutoHint = True
@@ -236,7 +267,7 @@ object Form1: TForm1
       end>
     ParentShowHint = False
     ShowHint = True
-    ExplicitTop = 618
+    ExplicitTop = 576
   end
   object IdSSLIOHandlerSocketOpenSSL1: TIdSSLIOHandlerSocketOpenSSL
     MaxLineAction = maException

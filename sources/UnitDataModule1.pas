@@ -91,9 +91,11 @@ begin
   Query1.SQL.Clear;
   Query1.SQL.Add('SELECT DISTINCT [code], [description]');
   Query1.SQL.Add('FROM [models]');
-  Query1.SQL.Add('WHERE ([make] = :make1)');
+  Query1.SQL.Add('WHERE (');
+  Query1.SQL.Add('([make] = :make1)');
   if not SingleMake then
     Query1.SQL.Add('OR ([make] = :make2)');
+  Query1.SQL.Add(') AND ([code] <> ''11AA'')');
   Query1.SQL.Add('ORDER BY [code]');
 
   Query1.ParamCheck := True;
@@ -128,7 +130,7 @@ begin
   Query1.SQL.Clear;
   Query1.SQL.Add('SELECT DISTINCT [code], [description]');
   Query1.SQL.Add('FROM [options]');
-  Query1.SQL.Add(Format('WHERE ([model] = :model) AND ([type] = ''%s'')', [AType]));
+  Query1.SQL.Add(Format('WHERE ([model] = :model) AND ([type] = ''%s'') AND ([code] <> ''0000'')', [AType]));
   Query1.SQL.Add('ORDER BY [code]');
 
   Query1.ParamCheck := True;

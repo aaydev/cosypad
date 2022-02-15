@@ -2,7 +2,26 @@ unit Cosy;
 
 interface
 
+type
+  TCosyParams = record
+    BKGND: Integer;
+    LANG: Integer;
+    CLIENT: string;
+    POV: string;
+    RESP: string;
+    WIDTH: Integer;
+    QUALITY: Integer;
+    VEHICLE: string;
+    BRAND: string;
+    MARKET: string;
+    PAINT: string;
+    FABRIC: string;
+    SA: string;
+  end;
+
+function GetCosyBrand(ABrand: Integer): string;
 function EncodeStr(AString: string): string;
+function BuildParamString(ACosyParams: TCosyParams): string;
 
 implementation
 
@@ -131,5 +150,49 @@ begin
 
   Result := EncodeURI(Result);
 end;
+
+function BuildParamString(ACosyParams: TCosyParams): string;
+begin
+  Result := '';
+  with ACosyParams do
+  begin
+    Result := Format('BKGND=%u&LANG=%u', [BKGND, LANG]);
+    if CLIENT <> '' then
+      Result := Result + Format('&CLIENT=%s', [CLIENT]);
+    if POV <> '' then
+      Result := Result + Format('&POV=%s', [POV]);
+    if RESP <> '' then
+      Result := Result + Format('&RESP=%s', [RESP]);
+    if WIDTH > 0 then
+      Result := Result + Format('&WIDTH=%u', [WIDTH]);
+    if QUALITY > 0 then
+      Result := Result + Format('&QUALITY=%u', [QUALITY]);
+    if VEHICLE <> '' then
+      Result := Result + Format('&VEHICLE=%s', [VEHICLE]);
+    if BRAND <> '' then
+      Result := Result + Format('&BRAND=%s', [BRAND]);
+    if MARKET <> '' then
+      Result := Result + Format('&MARKET=%s', [MARKET]);
+    if PAINT <> '' then
+      Result := Result + Format('&PAINT=P%s', [PAINT]);
+    if FABRIC <> '' then
+      Result := Result + Format('&FABRIC=F%s', [FABRIC]);
+    if SA = '' then
+      SA := 'S0000';
+    Result := Result + Format('&SA=%s', [SA])
+  end;
+end;
+
+function GetCosyBrand(ABrand: Integer): string;
+begin
+  Result := '';
+  case ABrand of
+    0: Result := 'WBBM';
+    1: Result := 'WBMI';
+    2: Result := 'WBABM';
+  end;
+end;
+
+
 
 end.

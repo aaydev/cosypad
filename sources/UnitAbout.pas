@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls,
-  Vcl.Imaging.pngimage;
+  Vcl.Imaging.pngimage, Vcl.Imaging.GIFImg;
 
 type
   TFormAbout = class(TForm)
@@ -47,7 +47,7 @@ begin
   Caption := 'About ' + AppName;
   Label2.Caption := AppName + ' v' + AppVer;
   Memo1.Visible := False;
-  Height := 135;
+  Height := 178;
 end;
 
 procedure TFormAbout.Label1Click(Sender: TObject);
@@ -61,7 +61,7 @@ begin
   if not Memo1.Visible then
   begin
     Memo1.Visible := True;
-    Height := Height + Memo1.Height + 15;
+    Height := Height + Memo1.Height + 8;
     Button1.Caption := 'I agree';
   end;
 end;

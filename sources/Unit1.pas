@@ -41,6 +41,7 @@ type
     Label7: TLabel;
     ButtonResetOptions: TButton;
     Panel5: TPanel;
+    LabelNoPicture: TLabel;
     ButtonRepaint: TButton;
     procedure ButtonRepaintClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -70,7 +71,14 @@ type
 
     procedure UpdateRequest;
 
+
     procedure DownloadAndViewImage(URL: string);
+    procedure UpdateImage;
+
+    function GetValuedCode(const ACode: string): string;
+    function GetOptionString(AOptionList: TStrings): string;
+
+
   public
     { Public declarations }
   end;
@@ -117,32 +125,8 @@ begin
 end;
 
 procedure TForm1.ButtonRepaintClick(Sender: TObject);
-var
-  params: string;
-
-  param_width: Integer;
-
-
-
 begin
-
-   param_width := Image1.Width;
-
-
-
-
-  MemoRequest.Lines.Text := 'BKGND=0&LANG=1&CLIENT=ECOM&POV=FRONT&RESP=jpeg,err_beauty&WIDTH=' + IntToStr(param_width) + '&QUALITY=80' +
-    '&VEHICLE=GV81&BRAND=WBBM&MARKET=RU&paint=P0X1D&fabric=FZBEJ&sa=S01A1,S01CR,S01N0,S02NH,S02T4,' +
-    'S02VB,S02VC,S02VH,S02VW,S0322,S0323,S033T,S0358,S03DS,S0402,S0428,S0453,S04A2,S04FM,S04GQ,S04HA,' +
-    'S04HB,S04ML,S04NB,S0548,S05AC,S05AU,S05AZ,S05DN,S06AE,S06AF,S06AK,S06C3,S06F1,S06NW,S06U3,S06UD,' +
-    'S0710,S0715,S071C,S0760,S0778,S07CG,S07M9,S07NH,S0842,S0891,S08KK,S08LR,S08S3,S08TF,S08TL,S08TR,' +
-    'S0XC4,S0XD5,S0ZH2';
-
-
-  params := MemoRequest.Lines.Text;
-
-
-  DownloadAndViewImage(CosyServiceURL + Cosy.EncodeStr(params));
+  UpdateImage;
 end;
 
 procedure TForm1.ButtonResetOptionsClick(Sender: TObject);
@@ -171,6 +155,9 @@ begin
   ComboBoxMake.Items.Add('BMW');
   ComboBoxMake.Items.Add('MINI');
   ComboBoxMake.Items.Add('BMW Motorrad');
+  ComboBoxMake.ItemIndex := 0;
+
+  ComboBoxView.ItemIndex := 0;
 
   ComboBoxModel.Clear;
   ComboBoxPaint.Clear;
@@ -187,11 +174,13 @@ end;
 procedure TForm1.CheckListBoxOptionsClick(Sender: TObject);
 begin
   UpdateRequest;
+  UpdateImage;
 end;
 
 procedure TForm1.ComboBoxFabricSelect(Sender: TObject);
 begin
   UpdateRequest;
+  UpdateImage;
 end;
 
 procedure TForm1.ComboBoxMakeSelect(Sender: TObject);
@@ -207,16 +196,19 @@ begin
   UpdateOptionList;
   UpdateRequestHalted := False;
   UpdateRequest;
+  UpdateImage;
 end;
 
 procedure TForm1.ComboBoxPaintSelect(Sender: TObject);
 begin
   UpdateRequest;
+  UpdateImage;
 end;
 
 procedure TForm1.ComboBoxViewSelect(Sender: TObject);
 begin
   UpdateRequest;
+  UpdateImage;
 end;
 
 procedure TForm1.DownloadAndViewImage(URL: string);
@@ -284,21 +276,15 @@ var
 begin
 
   case ComboBoxMake.ItemIndex of
-    0: brand := 'WBBM';
-    1: brand := 'WBMI';
-    2: brand := 'WBABM';
-  end;
-
-  case ComboBoxMake.ItemIndex of
-    0: begin
+    Integer(TMakes.makeBMW): begin
       make1 := 'BMW';
       make2 := 'BMWI';
     end;
-    1: begin
+    Integer(TMakes.makeMINI): begin
       make1 := 'BMW-MINI';
       make2 := make1;
     end;
-    2: begin
+    Integer(TMakes.makeMOTO): begin
       make1 := 'BMW-MOT';
       make2 := make1;
     end;
@@ -309,10 +295,10 @@ begin
   Cursor := crDefault;
   ComboBoxModel.ItemIndex := 0;
   ComboBoxModel.OnSelect(Self);
-
+  ComboBoxView.ItemIndex := 0;
 end;
 
-function GetValuedCode(const ACode: string): string;
+function TForm1.GetValuedCode(const ACode: string): string;
 var
   i: Integer;
 begin
@@ -353,9 +339,75 @@ begin
 end;
 
 procedure TForm1.UpdateRequest;
+var
+  Params: TCosyParams;
+  CheckedItems: TStrings;
+  OptionString: string;
+  POVString: string;
+  i: Integer;
 begin
   if UpdateRequestHalted then
     Exit;
+
+  // build option list string
+  CheckedItems := TStringList.Create;
+  for i := 0 to CheckListBoxOptions.Items.Count - 1 do
+  begin
+    if CheckListBoxOptions.Checked[i] then
+      CheckedItems.Add(CheckListBoxOptions.Items.Strings[i]);
+  end;
+  OptionString := GetOptionString(CheckedItems);
+  CheckedItems.Free;
+
+  POVString := ComboBoxView.Items[ComboBoxView.ItemIndex];
+  POVString := StringReplace(POVString ,' ', '', [rfReplaceAll]);
+  POVString := UpperCase(POVString);
+
+  with Params do
+  begin
+    BKGND := 0;
+    LANG := 1;
+    CLIENT := 'ECOM';
+    POV := POVString;
+    RESP := 'jpeg,err_beauty';
+    WIDTH := Image1.Width;
+    QUALITY := 80;
+    VEHICLE := GetValuedCode(ComboBoxModel.Items[ComboBoxModel.ItemIndex]);
+    BRAND := GetCosyBrand(ComboBoxMake.ItemIndex);
+    MARKET := 'RU';
+    PAINT := GetValuedCode(ComboBoxPaint.Items[ComboBoxPaint.ItemIndex]);
+    FABRIC := GetValuedCode(ComboBoxFabric.Items[ComboBoxFabric.ItemIndex]);
+    SA := OptionString;
+  end;
+
+  MemoRequest.Text := BuildParamString(Params);
+end;
+
+function TForm1.GetOptionString(AOptionList: TStrings): string;
+var
+  i: Integer;
+begin
+  Result := '';
+  for i := 0 to AOptionList.Count - 1 do
+  begin
+    if Result <> '' then
+      Result := Result + ',';
+    Result := Result+ 'S' + GetValuedCode(AOptionList.Strings[i]);
+  end;
+end;
+
+procedure TForm1.UpdateImage;
+begin
+  LabelNoPicture.Visible := False;
+  try
+    DownloadAndViewImage(CosyServiceURL + Cosy.EncodeStr(MemoRequest.Lines.Text));
+  except
+    on E:Exception do
+    begin
+      Image1.Picture := nil;
+      LabelNoPicture.Visible := True;
+    end;
+  end;
 end;
 
 
