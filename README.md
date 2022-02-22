@@ -1,7 +1,7 @@
 # cosypad
 BMW Colouring System (COSY) viewer
 
-![CosyPad screenshot](https://github.com/zxrepo/cosypad/raw/master/cosypad.jpg)
+![CosyPad screenshot](https://github.com/zxrepo/cosypad/blob/main/cosypad.jpg)
 
 ## Tools for development
 * [DB Browser for SQLite v3.12.2 for 64-bit Windows](https://download.sqlitebrowser.org/DB.Browser.for.SQLite-3.12.2-win64.zip)
