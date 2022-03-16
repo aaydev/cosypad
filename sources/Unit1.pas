@@ -8,22 +8,23 @@ uses
   IdIOHandler, IdIOHandlerSocket, IdIOHandlerStack, IdSSL, IdSSLOpenSSL, IdHTTP,
   IdBaseComponent, IdComponent, Vcl.ActnList, Vcl.StdActns, System.Actions,
   Vcl.ToolWin, Vcl.ActnMan, Vcl.ActnCtrls, Vcl.ActnMenus,
-  Vcl.PlatformDefaultStyleActnCtrls, Vcl.ComCtrls;
+  Vcl.PlatformDefaultStyleActnCtrls, Vcl.ComCtrls, Vcl.Imaging.GIFImg, Vcl.Menus,
+  Vcl.Imaging.jpeg;
 
 type
   TForm1 = class(TForm)
     Panel1: TPanel;
     Panel2: TPanel;
     ComboBoxMake: TComboBox;
-    Label1: TLabel;
-    Label2: TLabel;
+    LabelMake: TLabel;
+    LabelModel: TLabel;
     ComboBoxModel: TComboBox;
     ComboBoxPaint: TComboBox;
-    Label3: TLabel;
+    LabelColor: TLabel;
     ComboBoxFabric: TComboBox;
-    Label4: TLabel;
+    LabelOptions: TLabel;
     CheckListBoxOptions: TCheckListBox;
-    Label5: TLabel;
+    LabelUpholstery: TLabel;
     IdSSLIOHandlerSocketOpenSSL1: TIdSSLIOHandlerSocketOpenSSL;
     ActionManager1: TActionManager;
     ActionMainMenuBar1: TActionMainMenuBar;
@@ -34,16 +35,19 @@ type
     Action2: TAction;
     Panel3: TPanel;
     ComboBoxView: TComboBox;
-    Label6: TLabel;
+    LabelViews: TLabel;
     Panel4: TPanel;
     Image1: TImage;
-    MemoRequest: TMemo;
-    Label7: TLabel;
     ButtonResetOptions: TButton;
-    Panel5: TPanel;
-    LabelNoPicture: TLabel;
-    ButtonRepaint: TButton;
-    procedure ButtonRepaintClick(Sender: TObject);
+    Image2: TImage;
+    PopupMenu1: TPopupMenu;
+    SaveAs1: TMenuItem;
+    PanelDebug: TPanel;
+    ButtonUpdate: TButton;
+    MemoRequest: TMemo;
+    LabelDebug: TLabel;
+    ActionDebug: TAction;
+    procedure ButtonUpdateClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure Action2Execute(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -54,6 +58,10 @@ type
     procedure ComboBoxFabricSelect(Sender: TObject);
     procedure CheckListBoxOptionsClick(Sender: TObject);
     procedure ComboBoxViewSelect(Sender: TObject);
+    procedure Action1Execute(Sender: TObject);
+    procedure FileSaveAs1Accept(Sender: TObject);
+    procedure SaveAs1Click(Sender: TObject);
+    procedure ActionDebugExecute(Sender: TObject);
   private
     { Private declarations }
     UpdateRequestHalted: Boolean;
@@ -106,13 +114,18 @@ implementation
 {$R *.dfm}
 
 uses
-  JPEG,
   Data.DB,
   Data.SQLExpr,
   Cosy,
   UnitDataModule1,
   UnitAbout;
 
+
+procedure TForm1.Action1Execute(Sender: TObject);
+begin
+  UpdateRequest;
+  UpdateImage;
+end;
 
 procedure TForm1.Action2Execute(Sender: TObject);
 begin
@@ -124,7 +137,13 @@ begin
     end;
 end;
 
-procedure TForm1.ButtonRepaintClick(Sender: TObject);
+procedure TForm1.ActionDebugExecute(Sender: TObject);
+begin
+  ActionDebug.Checked := not ActionDebug.Checked;
+  PanelDebug.Visible := ActionDebug.Checked;
+end;
+
+procedure TForm1.ButtonUpdateClick(Sender: TObject);
 begin
   UpdateImage;
 end;
@@ -132,6 +151,7 @@ end;
 procedure TForm1.ButtonResetOptionsClick(Sender: TObject);
 begin
   ResetOptionSelection;
+  UpdateImage;
 end;
 
 function TForm1.InitApp: Boolean;
@@ -166,6 +186,9 @@ begin
   MemoRequest.Clear;
 
   UpdateRequestHalted := False;
+
+  ActionDebug.Checked := False;
+  PanelDebug.Visible := ActionDebug.Checked;
 
   Result := True;
 end;
@@ -238,6 +261,11 @@ begin
   end;
 end;
 
+
+procedure TForm1.FileSaveAs1Accept(Sender: TObject);
+begin
+  Image1.Picture.SaveToFile(FileSaveAs1.Dialog.FileName);
+end;
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
@@ -338,6 +366,11 @@ begin
   UpdateRequest;
 end;
 
+procedure TForm1.SaveAs1Click(Sender: TObject);
+begin
+  FileSaveAs1.Execute;
+end;
+
 procedure TForm1.UpdateRequest;
 var
   Params: TCosyParams;
@@ -398,14 +431,16 @@ end;
 
 procedure TForm1.UpdateImage;
 begin
-  LabelNoPicture.Visible := False;
   try
     DownloadAndViewImage(CosyServiceURL + Cosy.EncodeStr(MemoRequest.Lines.Text));
+    Image2.Visible := False;
+    Image1.Visible := True;
   except
     on E:Exception do
     begin
+      Image1.Visible := False;
+      Image2.Visible := True;
       Image1.Picture := nil;
-      LabelNoPicture.Visible := True;
     end;
   end;
 end;
