@@ -1,0 +1,142 @@
+OBJECT XMLport 50002 mo
+{
+  OBJECT-PROPERTIES
+  {
+    Date=14.02.22;
+    Time=12:04:41;
+    Modified=Yes;
+    Version List=;
+  }
+  PROPERTIES
+  {
+  }
+  ELEMENTS
+  {
+    { [{453A4A39-20D9-4529-A4C2-96BCBB354353}];  ;Root                ;Element ;Text     }
+
+    { [{293866BE-A039-4153-BA25-50A8760BE3CE}];1 ;ModelOptionsMaster  ;Element ;Table   ;
+                                                  SourceTable=Table5029110;
+                                                  SourceTableView=SORTING(Field1,Field2,Field3,Field4)
+                                                                  ORDER(Ascending)
+                                                                  WHERE(Field1=FILTER(BMW|BMW-C1|BMWI|BMWM|BMW-MINI|BMW-MOT|BMWN|MINI)) }
+
+    { [{11C04E67-15E7-4C88-8970-7E8CA2BE5150}];2 ;Make                ;Attribute;Field  ;
+                                                  DataType=Code;
+                                                  SourceField=Model Options Master::Make Code }
+
+    { [{BAEBC521-FDBC-4450-AF42-7DDBC193E133}];2 ;Model               ;Attribute;Field  ;
+                                                  DataType=Code;
+                                                  SourceField=Model Options Master::Model No. }
+
+    { [{49C8B14D-BB66-46C8-8544-A816D5135E13}];2 ;Code                ;Attribute;Field  ;
+                                                  DataType=Code;
+                                                  SourceField=Model Options Master::Code }
+
+    { [{D9246046-CD1A-43EA-92A2-29A2B4377F63}];2 ;IntCode             ;Attribute;Field  ;
+                                                  DataType=Code;
+                                                  SourceField=Model Options Master::Internal Code }
+
+    { [{8D7C90E8-82EF-42A4-8767-779837EE72D0}];2 ;Description         ;Attribute;Text   ;
+                                                  VariableName=DescrText;
+                                                  DataType=Text;
+                                                  Export::OnBeforePassVariable=VAR
+                                                                                 n@201000000 : Integer;
+                                                                               BEGIN
+                                                                                 DescrText := "Model Options Master".Description + "Model Options Master"."Description 2";
+                                                                                 DescrText := CONVERTSTR(DescrText, '#', 'ñ');
+                                                                                 n := STRPOS(DescrText, '  ');
+                                                                                 WHILE n > 0 DO BEGIN
+                                                                                   DescrText := COPYSTR(DescrText, 1, n - 1) + COPYSTR(DescrText, n + 1);
+                                                                                   n := STRPOS(DescrText, '  ');
+                                                                                 END;
+                                                                               END;
+                                                                                }
+
+  }
+  EVENTS
+  {
+  }
+  REQUESTPAGE
+  {
+    PROPERTIES
+    {
+    }
+    CONTROLS
+    {
+    }
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+
+OBJECT XMLport 50003 mm
+{
+  OBJECT-PROPERTIES
+  {
+    Date=14.02.22;
+    Time=11:58:25;
+    Modified=Yes;
+    Version List=;
+  }
+  PROPERTIES
+  {
+  }
+  ELEMENTS
+  {
+    { [{453A4A39-20D9-4529-A4C2-96BCBB354353}];  ;Root                ;Element ;Text     }
+
+    { [{293866BE-A039-4153-BA25-50A8760BE3CE}];1 ;ModelMaster         ;Element ;Table   ;
+                                                  SourceTable=Table5029108;
+                                                  SourceTableView=SORTING(Field1,Field2)
+                                                                  ORDER(Ascending)
+                                                                  WHERE(Field2=FILTER(BMW|BMW-C1|BMWI|BMWM|BMW-MINI|BMW-MOT|BMWN|MINI)) }
+
+    { [{11C04E67-15E7-4C88-8970-7E8CA2BE5150}];2 ;Make                ;Attribute;Field  ;
+                                                  DataType=Code;
+                                                  SourceField=Model Master::Make Code }
+
+    { [{BAEBC521-FDBC-4450-AF42-7DDBC193E133}];2 ;No.                 ;Attribute;Field  ;
+                                                  DataType=Code;
+                                                  SourceField=Model Master::No. }
+
+    { [{1C9927EB-0341-4EF2-940C-8BA54C7DEDF1}];2 ;Description         ;Attribute;Text   ;
+                                                  VariableName=DescrText;
+                                                  DataType=Text;
+                                                  Export::OnBeforePassVariable=VAR
+                                                                                 n@201000000 : Integer;
+                                                                               BEGIN
+                                                                                 DescrText := "Model Master".Description + "Model Master"."Description 2";
+                                                                                 //DescrText := CONVERTSTR(DescrText, '#', 'ñ');
+                                                                                 n := STRPOS(DescrText, '  ');
+                                                                                 WHILE n > 0 DO BEGIN
+                                                                                   DescrText := COPYSTR(DescrText, 1, n - 1) + COPYSTR(DescrText, n + 1);
+                                                                                   n := STRPOS(DescrText, '  ');
+                                                                                 END;
+                                                                               END;
+                                                                                }
+
+  }
+  EVENTS
+  {
+  }
+  REQUESTPAGE
+  {
+    PROPERTIES
+    {
+    }
+    CONTROLS
+    {
+    }
+  }
+  CODE
+  {
+
+    BEGIN
+    END.
+  }
+}
+
